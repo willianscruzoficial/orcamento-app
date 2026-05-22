@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orçamento">
+<link rel="manifest" href="manifest.json">
+<title>Orçamento Pessoal</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f1a; --card: #1a1a2e; --card2: #16213e;
+  --border: #2a2a4a; --accent: #4f8ef7; --green: #2ecc71;
+  --red: #e74c3c; --yellow: #f39c12; --text: #e8e8f0; --muted: #8888aa;
+  --pago: #27ae60; --pendente: #c0392b; --nav-h: 60px;
+}
+html, body {
+  height: 100%; background: var(--bg); color: var(--text);
+  font-family: "Segoe UI", sans-serif; font-size: 14px; overflow: hidden;
+}
+.tela { display: none; height: calc(100vh - var(--nav-h)); overflow-y: auto; }
+.tela.ativa { display: block; }
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h);
+  background: var(--card); border-top: 1px solid var(--border);
+  display: flex; z-index: 9999;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; background: none; border: none;
+  color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 600; padding: 8px 0;
+}
+.nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+.nav-btn.ativo { color: var(--accent); }
+.nr-loading-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,15,26,0.8); z-index: 998;
+  align-items: center; justify-content: center;
+}
+.nr-loading-overlay.visivel { display: flex; }
+
+/* ── RESET & BASE ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f0f1a;
+  --card:      #1a1a2e;
+  --card2:     #16213e;
+  --border:    #2a2a4a;
+  --accent:    #4f8ef7;
+  --green:     #2ecc71;
+  --red:       #e74c3c;
+  --yellow:    #f39c12;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --pago:      #27ae60;
+  --pendente:  #c0392b;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── TOPO FIXO ── */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+}
+
+.topo-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filtros input[type="date"],
+.filtros select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 130px;
+}
+
+.btn-filtrar {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-filtrar:hover { opacity: 0.85; }
+
+/* ── ABAS INTERNAS ── */
+.abas {
+  display: flex;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+}
+
+.aba-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.aba-btn.ativa {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── CONTEÚDO ── */
+.conteudo {
+  padding: 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.secao { display: none; }
+.secao.ativa { display: block; }
+
+/* ── CARDS MENSAIS ── */
+.card-mes {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.card-mes-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-mes-linhas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linha-valor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--card2);
+}
+
+.linha-label { color: var(--muted); font-size: 13px; }
+
+.val-receita { color: var(--green); font-weight: 700; }
+.val-despesa { color: var(--red);   font-weight: 700; }
+.val-positivo { color: var(--green); font-weight: 700; font-size: 15px; }
+.val-negativo { color: var(--red);   font-weight: 700; font-size: 15px; }
+
+.linha-saldo {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+/* ── FONTE CARDS ── */
+.filtro-modo {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.btn-modo {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modo.ativo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.grupo-fonte {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.fonte-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fonte-item:last-child { border-bottom: none; }
+
+.fonte-info { flex: 1; }
+.fonte-nome { font-weight: 600; font-size: 14px; }
+.fonte-modo-tag {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.fonte-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fonte-valor { font-weight: 700; font-size: 14px; color: var(--red); }
+
+.btn-status {
+  border: none;
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-status.pago {
+  background: var(--pago);
+  color: #fff;
+}
+
+.btn-status.pendente {
+  background: var(--pendente);
+  color: #fff;
+}
+
+.fonte-total {
+  background: var(--card2);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fonte-total span:last-child { color: var(--text); }
+
+.total-geral-box {
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.total-geral-label { font-weight: 700; font-size: 14px; color: var(--accent); }
+.total-geral-valor { font-weight: 700; font-size: 16px; color: var(--red); }
+
+/* ── PARCELAS ── */
+.card-parcela {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 15px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.parcela-info { flex: 1; }
+.parcela-item { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+
+.parcela-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--card2);
+  color: var(--muted);
+}
+
+.tag-fonte { color: var(--accent); }
+
+.parcela-valores { text-align: right; }
+.parcela-valor-parc { font-weight: 700; color: var(--red); font-size: 14px; }
+.parcela-data { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.parcela-total { font-size: 11px; color: var(--yellow); margin-top: 3px; }
+.parcela-meses { font-size: 11px; color: var(--muted); }
+
+/* ── LOADING / VAZIO ── */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.spinner {
+  width: 30px; height: 30px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.vazio {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── RESUMO TOPO MENSAL ── */
+.resumo-periodo {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.resumo-box {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.resumo-box-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.resumo-box-val   { font-size: 15px; font-weight: 700; }
+
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f0f1a;
+  --card:     #1a1a2e;
+  --card2:    #16213e;
+  --border:   #2a2a4a;
+  --accent:   #4f8ef7;
+  --green:    #2ecc71;
+  --red:      #e74c3c;
+  --yellow:   #f39c12;
+  --text:     #e8e8f0;
+  --muted:    #8888aa;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── TOPO ── */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+}
+
+.topo-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+/* ── SELETORES ENCADEADOS ── */
+.seletores {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.seletores select {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.seletores select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-add-filtro {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-add-filtro:hover { opacity: 0.85; }
+.btn-add-filtro:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── CHIPS DE FILTROS ATIVOS ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 10px;
+}
+
+.chip {
+  background: var(--card2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 3px 10px 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.chip-remove:hover { color: var(--red); }
+
+.btn-limpar {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-limpar:hover { border-color: var(--red); color: var(--red); }
+
+/* ── CONTADOR ── */
+.contador {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── LISTA ── */
+.conteudo {
+  padding: 12px 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ── CARD DE REGISTRO ── */
+.card-reg {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+}
+
+.card-reg-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.card-id {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.card-item {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  line-height: 1.3;
+}
+
+.card-valor {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.val-desp { color: var(--red); }
+.val-rec  { color: var(--green); }
+
+/* ── LINHA DE DATAS ── */
+.card-datas {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.data-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.data-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.data-val { color: var(--text); font-weight: 600; }
+
+/* ── TAGS ── */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--card2);
+  color: var(--muted);
+}
+
+.tag-tipo-desp { background: rgba(231,76,60,0.15); color: var(--red); }
+.tag-tipo-rec  { background: rgba(46,204,113,0.15); color: var(--green); }
+.tag-fonte     { background: rgba(79,142,247,0.15); color: var(--accent); }
+.tag-cat       { background: rgba(243,156,18,0.15); color: var(--yellow); }
+
+/* ── LINHA INFERIOR ── */
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.card-local { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-parc  { white-space: nowrap; margin-left: 8px; }
+
+/* ── BOTÃO CARREGAR MAIS ── */
+.btn-mais {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.2s;
+}
+
+.btn-mais:hover { background: var(--card2); }
+.btn-mais:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── LOADING / VAZIO ── */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.spinner {
+  width: 30px; height: 30px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.vazio {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f1a; --card: #1a1a2e; --card2: #16213e;
+  --border: #2a2a4a; --accent: #4f8ef7; --green: #2ecc71;
+  --red: #e74c3c; --yellow: #f39c12; --text: #e8e8f0; --muted: #8888aa;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+.topo {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.topo-titulo { font-size: 16px; font-weight: 700; color: var(--accent); }
+
+.form { padding: 16px; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.campo input, .campo select, .campo textarea {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 8px;
+  font-size: 14px; width: 100%;
+}
+.campo input:focus, .campo select:focus { outline: none; border-color: var(--accent); }
+.campo select option { background: var(--card); }
+
+/* Tipo toggle */
+.tipo-toggle { display: flex; gap: 8px; }
+.btn-tipo {
+  flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card2); color: var(--muted); font-weight: 700;
+  font-size: 14px; cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.btn-tipo.ativo-desp { background: rgba(231,76,60,0.2); border-color: var(--red); color: var(--red); }
+.btn-tipo.ativo-rec  { background: rgba(46,204,113,0.2); border-color: var(--green); color: var(--green); }
+
+/* Checkbox parcelado */
+.checkbox-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1px solid var(--border);
+  padding: 12px; border-radius: 8px; cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+.checkbox-row span { font-size: 14px; font-weight: 600; }
+
+/* Parcelas extra */
+.parcelas-extra {
+  display: none; background: var(--card2);
+  border: 1px solid var(--accent); border-radius: 8px; padding: 12px;
+  gap: 10px; flex-direction: column;
+}
+.parcelas-extra.visivel { display: flex; }
+.parcelas-extra input { background: var(--bg); }
+
+/* Linha dupla */
+.linha-dupla { display: flex; gap: 10px; }
+.linha-dupla .campo { flex: 1; }
+
+/* Categoria com botão */
+.cat-row { display: flex; gap: 8px; align-items: flex-end; }
+.cat-row .campo { flex: 1; }
+.btn-nova-cat {
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--accent); padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  height: 42px;
+}
+.btn-nova-cat:hover { border-color: var(--accent); }
+
+/* Nova categoria input */
+.nova-cat-box {
+  display: none; flex-direction: column; gap: 8px;
+  background: var(--card2); border: 1px solid var(--accent);
+  border-radius: 8px; padding: 12px;
+}
+.nova-cat-box.visivel { display: flex; }
+.nova-cat-actions { display: flex; gap: 8px; }
+
+/* Botão salvar */
+.btn-salvar {
+  background: var(--accent); color: #fff; border: none;
+  padding: 14px; border-radius: 10px; font-size: 15px;
+  font-weight: 700; cursor: pointer; width: 100%; margin-top: 4px;
+}
+.btn-salvar:hover { opacity: 0.85; }
+.btn-salvar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--green); color: #fff; padding: 12px 24px;
+  border-radius: 20px; font-weight: 700; font-size: 14px;
+  opacity: 0; transition: opacity 0.3s; z-index: 999; pointer-events: none;
+}
+.toast.erro { background: var(--red); }
+.toast.visivel { opacity: 1; }
+
+.nr-loading-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,15,26,0.8); z-index: 998;
+  align-items: center; justify-content: center;
+}
+.nr-loading-overlay.visivel { display: flex; }
+.spinner {
+  width: 40px; height: 40px; border: 4px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.id-badge {
+  background: var(--card2); border: 1px solid var(--border);
+  padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  color: var(--muted); display: flex; justify-content: space-between;
+}
+.id-badge span { color: var(--accent); font-weight: 700; }
+
+.btn-sm {
+  padding: 7px 14px; border-radius: 6px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-confirma { background: var(--accent); color: #fff; }
+.btn-cancela  { background: var(--card); border: 1px solid var(--border); color: var(--muted); }
+
+</style>
+</head>
+<body>
+
+<div class="tela ativa" id="tela-dashboard">
+
+
+<!-- TOPO FIXO -->
+<div class="topo">
+  <div class="topo-titulo">📊 Orçamento Pessoal</div>
+  <div class="filtros">
+    <input type="date" id="dataIni">
+    <input type="date" id="dataFim">
+    <select id="filtroSetor">
+      <option value="TODOS">Todos os setores</option>
+      <option value="PESSOAL">Pessoal</option>
+      <option value="DIGITAL">Digital</option>
+      <option value="PET SAÚDE">PET Saúde</option>
+    </select>
+    <button class="btn-filtrar" onclick="carregarDados()">Filtrar</button>
+  </div>
+</div>
+
+<!-- ABAS -->
+<div class="abas">
+  <button class="aba-btn ativa" onclick="mudarAba('mensal', this)">📅 Mensal</button>
+  <button class="aba-btn" onclick="mudarAba('fontes', this)">🏦 Por Fonte</button>
+  <button class="aba-btn" onclick="mudarAba('parcelas', this)">📋 Parcelas</button>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="conteudo">
+
+  <!-- SEÇÃO MENSAL -->
+  <div id="secao-mensal" class="secao ativa">
+    <div id="resumo-periodo" class="resumo-periodo" style="display:none">
+      <div class="resumo-box">
+        <div class="resumo-box-label">Total Receitas</div>
+        <div class="resumo-box-val val-receita" id="total-receita">—</div>
+      </div>
+      <div class="resumo-box">
+        <div class="resumo-box-label">Total Despesas</div>
+        <div class="resumo-box-val val-despesa" id="total-despesa">—</div>
+      </div>
+      <div class="resumo-box">
+        <div class="resumo-box-label">Saldo</div>
+        <div class="resumo-box-val" id="total-saldo">—</div>
+      </div>
+    </div>
+    <div id="lista-mensal">
+      <div class="loading"><div class="spinner"></div>Carregando...</div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO FONTES -->
+  <div id="secao-fontes" class="secao">
+    <div class="filtro-modo">
+      <button class="btn-modo ativo" onclick="filtrarModo('TODOS', this)">Todos</button>
+      <button class="btn-modo" onclick="filtrarModo('DÉBITO', this)">Débito</button>
+      <button class="btn-modo" onclick="filtrarModo('CRÉDITO', this)">Crédito</button>
+    </div>
+    <div id="lista-fontes">
+      <div class="loading"><div class="spinner"></div>Carregando...</div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO PARCELAS -->
+  <div id="secao-parcelas" class="secao">
+    <div id="lista-parcelas">
+      <div class="loading"><div class="spinner"></div>Carregando...</div>
+    </div>
+  </div>
+
+</div>
+
+
+
+</div>
+
+<div class="tela" id="tela-registros">
+
+
+<!-- TOPO FIXO -->
+<div class="topo">
+  <div class="topo-titulo">📋 Registros</div>
+
+  <!-- SELETORES ENCADEADOS -->
+  <div class="seletores">
+    <select id="sel-coluna" onchange="onColunaChange()">
+      <option value="">— Filtrar por —</option>
+      <option value="ANO">Ano</option>
+      <option value="MÊS">Mês</option>
+      <option value="TIPO">Tipo</option>
+      <option value="SETOR">Setor</option>
+      <option value="CATEGORIA">Categoria</option>
+      <option value="FONTE">Fonte</option>
+      <option value="MODO">Modo</option>
+      <option value="LOCAL OU PESSOA">Local / Pessoa</option>
+    </select>
+    <select id="sel-valor" disabled onchange="onValorChange()">
+      <option value="">— Valor —</option>
+    </select>
+    <button class="btn-add-filtro" id="btn-add" onclick="adicionarFiltro()" disabled>+</button>
+  </div>
+
+  <!-- CHIPS DE FILTROS ATIVOS -->
+  <div class="chips" id="chips-container"></div>
+</div>
+
+<!-- CONTADOR -->
+<div class="contador" id="contador">Carregando...</div>
+
+<!-- LISTA DE REGISTROS -->
+<div class="conteudo">
+  <div id="lista-registros">
+    <div class="loading"><div class="spinner"></div>Carregando registros...</div>
+  </div>
+  <button class="btn-mais" id="btn-mais" style="display:none" onclick="carregarMais()">
+    ↓ Carregar mais
+  </button>
+</div>
+
+
+
+</div>
+
+<div class="tela" id="tela-novo">
+
+
+<div class="topo">
+  <div class="topo-titulo">➕ Novo Registro</div>
+</div>
+
+<div class="form" id="form-principal">
+
+  <!-- ID (readonly) -->
+  <div class="id-badge">
+    <span>ID do registro</span>
+    <span id="display-id">carregando...</span>
+  </div>
+
+  <!-- TIPO -->
+  <div class="campo">
+    <label>Tipo</label>
+    <div class="tipo-toggle">
+      <button class="btn-tipo ativo-desp" id="btn-desp" onclick="setTipo('DESPESAS')">💸 Despesa</button>
+      <button class="btn-tipo" id="btn-rec" onclick="setTipo('RECEITAS')">💰 Receita</button>
+    </div>
+  </div>
+
+  <!-- ITEM -->
+  <div class="campo">
+    <label>Descrição do item *</label>
+    <input type="text" id="item" placeholder="Ex: Mercado, Salário, Netflix..." autocomplete="off">
+  </div>
+
+  <!-- VALOR -->
+  <div class="campo">
+    <label>Valor (R$) *</label>
+    <input type="number" id="vabs" placeholder="0,00" min="0" step="0.01">
+  </div>
+
+  <!-- PARCELADO -->
+  <label class="checkbox-row" onclick="toggleParcelado()">
+    <input type="checkbox" id="chk-parcelado">
+    <span>📦 É parcelado?</span>
+  </label>
+
+  <!-- DETALHES DE PARCELA -->
+  <div class="parcelas-extra" id="parcelas-extra">
+    <div class="campo">
+      <label>Quantidade de parcelas *</label>
+      <input type="number" id="num-parcelas" placeholder="Ex: 12" min="2" max="999" step="1"
+             oninput="this.value = Math.floor(this.value)">
+    </div>
+    <div style="font-size:12px; color: var(--muted);">
+      💡 O app vai criar uma linha para cada parcela, com datas incrementando mês a mês a partir do PGTO.
+    </div>
+  </div>
+
+  <!-- DATAS -->
+  <div class="linha-dupla">
+    <div class="campo">
+      <label>Data PGTO (fatura) *</label>
+      <input type="date" id="pgto">
+    </div>
+    <div class="campo">
+      <label>Data da compra</label>
+      <input type="date" id="trans">
+    </div>
+  </div>
+
+  <!-- SETOR + MODO -->
+  <div class="linha-dupla">
+    <div class="campo">
+      <label>Setor *</label>
+      <select id="setor">
+        <option value="PESSOAL">PESSOAL</option>
+        <option value="DIGITAL">DIGITAL</option>
+        <option value="PET SAÚDE">PET SAÚDE</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Modo *</label>
+      <select id="modo">
+        <option value="DEB">DEB</option>
+        <option value="CRED">CRED</option>
+        <option value="REC">REC</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- CATEGORIA -->
+  <div class="campo">
+    <label>Categoria *</label>
+    <div class="cat-row">
+      <div class="campo" style="margin:0">
+        <select id="cat"></select>
+      </div>
+      <button class="btn-nova-cat" onclick="toggleNovaCat()">+ Nova</button>
+    </div>
+  </div>
+
+  <!-- NOVA CATEGORIA -->
+  <div class="nova-cat-box" id="nova-cat-box">
+    <div class="campo" style="margin:0">
+      <label>Nome da nova categoria</label>
+      <input type="text" id="nova-cat-input" placeholder="Ex: SAÚDE, LAZER..." style="text-transform:uppercase">
+    </div>
+    <div class="nova-cat-actions">
+      <button class="btn-sm btn-confirma" onclick="confirmarNovaCat()">Confirmar</button>
+      <button class="btn-sm btn-cancela" onclick="toggleNovaCat()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- FONTE -->
+  <div class="campo">
+    <label>Fonte (banco) *</label>
+    <select id="fonte"></select>
+  </div>
+
+  <!-- LOCAL -->
+  <div class="campo">
+    <label>Local ou Pessoa</label>
+    <input type="text" id="local" placeholder="Ex: Pague Menos, João, Internet...">
+  </div>
+
+  <!-- BOTÃO SALVAR -->
+  <button class="btn-salvar" id="btn-salvar" onclick="confirmarSalvar()">
+    ✅ Salvar Registro
+  </button>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="nr-toast"></div>
+
+<!-- LOADING -->
+<div class="nr-loading-overlay" id="nr-loading">
+  <div class="spinner"></div>
+</div>
+
+
+
+</div>
+
+<nav class="nav-bar">
+  <button class="nav-btn ativo" id="nav-dashboard" onclick="irPara('dashboard')">
+    <span class="nav-icon">📊</span><span>Dashboard</span>
+  </button>
+  <button class="nav-btn" id="nav-registros" onclick="irPara('registros')">
+    <span class="nav-icon">📋</span><span>Registros</span>
+  </button>
+  <button class="nav-btn" id="nav-novo" onclick="irPara('novo')">
+    <span class="nav-icon">➕</span><span>Novo</span>
+  </button>
+</nav>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+var isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+var isStandalone = window.navigator.standalone;
+if (isIos && !isStandalone) {
+  setTimeout(function() {
+    var d = document.getElementById('dica-pwa');
+    if (d) d.style.display = 'flex';
+  }, 3000);
+}
+</script>
+<div id="dica-pwa" style="display:none;position:fixed;bottom:70px;left:16px;right:16px;
+  background:#1a1a2e;border:1px solid #4f8ef7;border-radius:12px;padding:14px 16px;
+  z-index:99999;align-items:center;gap:12px;font-size:13px;color:#e8e8f0;">
+  <span style="font-size:22px">📲</span>
+  <div style="flex:1">
+    <div style="font-weight:700;margin-bottom:3px;">Adicionar à tela inicial</div>
+    <div style="color:#8888aa;font-size:12px;">Toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b></div>
+  </div>
+  <button onclick="document.getElementById('dica-pwa').style.display='none'"
+    style="background:none;border:none;color:#8888aa;font-size:20px;cursor:pointer">✕</button>
+</div>
+
+<script>
+
+// ── CAMADA DE COMPATIBILIDADE google.script.run → fetch ──────
+var _successHandler = null;
+var _failureHandler = null;
+
+var google = {
+  script: {
+    run: new Proxy({}, {
+      get: function(target, funcName) {
+        return new Proxy({}, {
+          get: function(t2, method) {
+            if (method === 'withSuccessHandler') {
+              return function(fn) {
+                _successHandler = fn;
+                return google.script.run[funcName];
+              };
+            }
+            if (method === 'withFailureHandler') {
+              return function(fn) {
+                _failureHandler = fn;
+                return google.script.run[funcName];
+              };
+            }
+            return google.script.run[funcName];
+          },
+          apply: function(t2, thisArg, args) {
+            var sh = _successHandler;
+            var fh = _failureHandler;
+            _successHandler = null;
+            _failureHandler = null;
+            callBackend(funcName, args, sh, fh);
+          }
+        });
+      }
+    })
+  }
+};
+
+function callBackend(funcName, args, successHandler, failureHandler) {
+  var url = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec';
+  var payload = { func: funcName, args: args };
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) {
+      if (failureHandler) failureHandler({ message: data.error });
+    } else {
+      if (successHandler) successHandler(data.result);
+    }
+  })
+  .catch(function(e) {
+    if (failureHandler) failureHandler({ message: e.message });
+    else console.error('Backend error:', e);
+  });
+}
+
+
+// ── NAVEGAÇÃO ──────────────────────────────────────────────
+var telaAtual = 'dashboard';
+var telasIniciadas = {};
+
+window.onload = function() {
+  telasIniciadas['dashboard'] = true;
+  initDashboard();
+};
+
+function irPara(nome) {
+  if (nome === telaAtual) return;
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('ativo'); });
+  document.getElementById('nav-' + nome).classList.add('ativo');
+  document.querySelectorAll('.tela').forEach(function(t) { t.classList.remove('ativa'); });
+  document.getElementById('tela-' + nome).classList.add('ativa');
+  telaAtual = nome;
+  if (!telasIniciadas[nome]) {
+    telasIniciadas[nome] = true;
+    if (nome === 'registros') { carregarRegistros(true); }
+    if (nome === 'novo')      { initNovoRegistro(); }
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────
+
+// ── ESTADO ─────────────────────────────────────────────────
+var dadosCache    = null;
+var modoFonte     = 'TODOS';
+var statusCache   = {};
+
+// ── INICIALIZAÇÃO ──────────────────────────────────────────
+function initDashboard() {
+  // Define mês atual como padrão
+  var hoje = new Date();
+  var ini  = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var fim  = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+  document.getElementById('dataIni').value = formatDateInput(ini);
+  document.getElementById('dataFim').value = formatDateInput(fim);
+  carregarDados();
+};
+
+function formatDateInput(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dia = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dia;
+}
+
+// ── CARREGA DADOS DO SERVIDOR ──────────────────────────────
+function carregarDados() {
+  var dataIni  = document.getElementById('dataIni').value;
+  var dataFim  = document.getElementById('dataFim').value;
+  var setor    = document.getElementById('filtroSetor').value;
+
+  setLoading();
+
+  google.script.run
+    .withSuccessHandler(function(dados) {
+      dadosCache = dados;
+      renderMensal(dados.mensal);
+      renderFontes(dados.fontes);
+      renderParcelas(dados.parcelas);
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById('lista-mensal').innerHTML =
+        '<div class="vazio">❌ Erro: ' + err.message + '</div>';
+    })
+    .getDadosDashboard(dataIni, dataFim, setor);
+}
+
+function setLoading() {
+  var html = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+  document.getElementById('lista-mensal').innerHTML   = html;
+  document.getElementById('lista-fontes').innerHTML   = html;
+  document.getElementById('lista-parcelas').innerHTML = html;
+}
+
+// ── RENDER MENSAL ──────────────────────────────────────────
+function renderMensal(meses) {
+  var container = document.getElementById('lista-mensal');
+  var resumo    = document.getElementById('resumo-periodo');
+
+  if (!meses || meses.length === 0) {
+    container.innerHTML = '<div class="vazio">Nenhum dado no período selecionado.</div>';
+    resumo.style.display = 'none';
+    return;
+  }
+
+  // Totais do período
+  var totRec = 0, totDesp = 0;
+  meses.forEach(function(m) { totRec += m.receita; totDesp += m.despesa; });
+  var totSaldo = totRec - totDesp;
+
+  document.getElementById('total-receita').textContent = formatBRL(totRec);
+  document.getElementById('total-despesa').textContent = formatBRL(totDesp);
+  var saldoEl = document.getElementById('total-saldo');
+  saldoEl.textContent  = formatBRL(totSaldo);
+  saldoEl.className    = 'resumo-box-val ' + (totSaldo >= 0 ? 'val-positivo' : 'val-negativo');
+  resumo.style.display = 'flex';
+
+  // Cards por mês
+  var html = '';
+  meses.forEach(function(m) {
+    var saldoClass = m.saldo >= 0 ? 'val-positivo' : 'val-negativo';
+    html += '<div class="card-mes">' +
+      '<div class="card-mes-titulo">' + m.label + '</div>' +
+      '<div class="card-mes-linhas">' +
+        '<div class="linha-valor">' +
+          '<span class="linha-label">Receitas</span>' +
+          '<span class="val-receita">' + formatBRL(m.receita) + '</span>' +
+        '</div>' +
+        '<div class="linha-valor">' +
+          '<span class="linha-label">Despesas</span>' +
+          '<span class="val-despesa">' + formatBRL(m.despesa) + '</span>' +
+        '</div>' +
+        '<div class="linha-valor linha-saldo">' +
+          '<span class="linha-label">Saldo</span>' +
+          '<span class="' + saldoClass + '">' + formatBRL(m.saldo) + '</span>' +
+        '</div>' +
+      '</div></div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ── RENDER FONTES ──────────────────────────────────────────
+function renderFontes(fontes) {
+  if (!fontes) return;
+
+  // Busca status atual do servidor
+  var mesAno = getMesAnoFiltro();
+  google.script.run
+    .withSuccessHandler(function(status) {
+      statusCache = status || {};
+      renderFontesComStatus(fontes);
+    })
+    .withFailureHandler(function() {
+      statusCache = {};
+      renderFontesComStatus(fontes);
+    })
+    .getStatusPagamentos(mesAno);
+}
+
+function renderFontesComStatus(fontes) {
+  var container = document.getElementById('lista-fontes');
+
+  var filtradas = fontes.filter(function(f) {
+    if (modoFonte === 'TODOS')   return true;
+    if (modoFonte === 'DÉBITO')  return f.modo === 'DÉBITO';
+    if (modoFonte === 'CRÉDITO') return f.modo === 'CRÉDITO';
+    return true;
+  });
+
+  if (!filtradas || filtradas.length === 0) {
+    container.innerHTML = '<div class="vazio">Nenhuma fonte no período.</div>';
+    return;
+  }
+
+  // Agrupa por fonte
+  var grupos = {};
+  filtradas.forEach(function(f) {
+    if (!grupos[f.fonte]) grupos[f.fonte] = [];
+    grupos[f.fonte].push(f);
+  });
+
+  var totalGeral = 0;
+  var html = '';
+
+  Object.keys(grupos).sort().forEach(function(nomeFonte) {
+    var itens       = grupos[nomeFonte];
+    var totalFonte  = itens[0].totalFonte;
+    var temMultiplos = itens.length > 1;
+
+    html += '<div class="grupo-fonte">';
+
+    itens.forEach(function(f) {
+      var chave   = f.fonte + '||' + f.modo;
+      var statusVal = statusCache[chave] || 'PENDENTE';
+      var btnClass  = statusVal === 'PAGO' ? 'pago' : 'pendente';
+      var btnLabel  = statusVal === 'PAGO' ? '✅ PAGO' : '◻ PENDENTE';
+
+      html += '<div class="fonte-item">' +
+        '<div class="fonte-info">' +
+          '<div class="fonte-nome">' + f.fonte + '</div>' +
+          '<div class="fonte-modo-tag">' + f.modo + '</div>' +
+        '</div>' +
+        '<div class="fonte-direita">' +
+          '<span class="fonte-valor">' + formatBRL(f.total) + '</span>' +
+          '<button class="btn-status ' + btnClass + '" ' +
+            'onclick="toggleStatus(\'' + chave.replace(/'/g, "\\'") + '\')">' +
+            btnLabel +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    });
+
+    if (temMultiplos) {
+      html += '<div class="fonte-total">' +
+        '<span>Total ' + nomeFonte + '</span>' +
+        '<span>' + formatBRL(totalFonte) + '</span>' +
+      '</div>';
+    }
+
+    html += '</div>';
+    totalGeral += totalFonte;
+  });
+
+  // Remove duplicatas do total geral quando há filtro
+  if (modoFonte !== 'TODOS') {
+    totalGeral = filtradas.reduce(function(s, f) { return s + f.total; }, 0);
+  }
+
+  html += '<div class="total-geral-box">' +
+    '<span class="total-geral-label">TOTAL GERAL</span>' +
+    '<span class="total-geral-valor">' + formatBRL(totalGeral) + '</span>' +
+  '</div>';
+
+  container.innerHTML = html;
+}
+
+function toggleStatus(chave) {
+  var mesAno = getMesAnoFiltro();
+  google.script.run
+    .withSuccessHandler(function(novoStatus) {
+      statusCache[chave] = novoStatus;
+      renderFontesComStatus(dadosCache.fontes);
+    })
+    .toggleStatusPagamento(mesAno, chave);
+}
+
+function filtrarModo(modo, btn) {
+  modoFonte = modo;
+  document.querySelectorAll('.btn-modo').forEach(function(b) {
+    b.classList.remove('ativo');
+  });
+  btn.classList.add('ativo');
+  if (dadosCache) renderFontesComStatus(dadosCache.fontes);
+}
+
+// ── RENDER PARCELAS ────────────────────────────────────────
+function renderParcelas(parcelas) {
+  var container = document.getElementById('lista-parcelas');
+
+  if (!parcelas || parcelas.length === 0) {
+    container.innerHTML = '<div class="vazio">Nenhuma parcela futura encontrada.</div>';
+    return;
+  }
+
+  var html = '';
+  parcelas.forEach(function(p) {
+    html += '<div class="card-parcela">' +
+      '<div class="parcela-info">' +
+        '<div class="parcela-item">' + p.item + '</div>' +
+        '<div class="parcela-tags">' +
+          '<span class="tag tag-fonte">' + p.fonte + '</span>' +
+          '<span class="tag">' + p.modo + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="parcela-valores">' +
+        '<div class="parcela-valor-parc">' + formatBRL(p.vabs) + '/mês</div>' +
+        '<div class="parcela-meses">' + p.qtdMeses + ' parcela(s)</div>' +
+        '<div class="parcela-data">Próx: ' + p.proxData + '</div>' +
+        '<div class="parcela-total">Total restante: ' + formatBRL(p.totalRestante) + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ── ABAS ───────────────────────────────────────────────────
+function mudarAba(nome, btn) {
+  document.querySelectorAll('.secao').forEach(function(s) {
+    s.classList.remove('ativa');
+  });
+  document.querySelectorAll('.aba-btn').forEach(function(b) {
+    b.classList.remove('ativa');
+  });
+  document.getElementById('secao-' + nome).classList.add('ativa');
+  btn.classList.add('ativa');
+}
+
+// ── UTILITÁRIOS ────────────────────────────────────────────
+function formatBRL(v) {
+  return 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function getMesAnoFiltro() {
+  var d = document.getElementById('dataIni').value;
+  if (!d) return '';
+  var parts = d.split('-');
+  return parts[1] + '/' + parts[0]; // MM/YYYY
+}
+
+
+// ── REGISTROS ─────────────────────────────────────────────
+
+// ── ESTADO ─────────────────────────────────────────────────
+var filtrosAtivos = [];
+var offset        = 0;
+var limite        = 30;
+var totalGeral    = 0;
+var carregando    = false;
+var valorSelecionado = null;
+
+// ── INICIALIZAÇÃO ──────────────────────────────────────────
+// ── SELETOR ENCADEADO ─────────────────────────────────────
+function onColunaChange() {
+  var coluna = document.getElementById('sel-coluna').value;
+  var selValor = document.getElementById('sel-valor');
+  var btnAdd   = document.getElementById('btn-add');
+
+  selValor.innerHTML = '<option value="">Carregando...</option>';
+  selValor.disabled  = true;
+  btnAdd.disabled    = true;
+  valorSelecionado   = null;
+
+  if (!coluna) {
+    selValor.innerHTML = '<option value="">— Valor —</option>';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(valores) {
+      var html = '<option value="">— Selecione —</option>';
+      valores.forEach(function(v) {
+        html += '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>';
+      });
+      selValor.innerHTML = html;
+      selValor.disabled  = false;
+    })
+    .withFailureHandler(function() {
+      selValor.innerHTML = '<option value="">Erro ao carregar</option>';
+    })
+    .getValoresColuna(coluna);
+}
+
+function onValorChange() {
+  var val = document.getElementById('sel-valor').value;
+  valorSelecionado = val || null;
+  document.getElementById('btn-add').disabled = !val;
+}
+
+function adicionarFiltro() {
+  var coluna = document.getElementById('sel-coluna').value;
+  var valor  = document.getElementById('sel-valor').value;
+  if (!coluna || !valor) return;
+
+  // Evita duplicata da mesma coluna+valor
+  var existe = filtrosAtivos.some(function(f) {
+    return f.coluna === coluna && f.valor === valor;
+  });
+  if (existe) return;
+
+  filtrosAtivos.push({ coluna: coluna, valor: valor });
+
+  // Reseta seletores
+  document.getElementById('sel-coluna').value = '';
+  document.getElementById('sel-valor').innerHTML = '<option value="">— Valor —</option>';
+  document.getElementById('sel-valor').disabled = true;
+  document.getElementById('btn-add').disabled   = true;
+  valorSelecionado = null;
+
+  renderChips();
+  carregarRegistros(true);
+}
+
+function removerFiltro(idx) {
+  filtrosAtivos.splice(idx, 1);
+  renderChips();
+  carregarRegistros(true);
+}
+
+function limparFiltros() {
+  filtrosAtivos = [];
+  renderChips();
+  carregarRegistros(true);
+}
+
+function renderChips() {
+  var container = document.getElementById('chips-container');
+  if (filtrosAtivos.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  var html = '';
+  filtrosAtivos.forEach(function(f, i) {
+    html += '<div class="chip">' +
+      '<span>' + escapeHtml(f.coluna) + ': ' + escapeHtml(f.valor) + '</span>' +
+      '<button class="chip-remove" onclick="removerFiltro(' + i + ')">✕</button>' +
+    '</div>';
+  });
+  html += '<button class="btn-limpar" onclick="limparFiltros()">Limpar tudo</button>';
+  container.innerHTML = html;
+}
+
+// ── CARREGAR REGISTROS ─────────────────────────────────────
+function carregarRegistros(reiniciar) {
+  if (carregando) return;
+  carregando = true;
+
+  if (reiniciar) {
+    offset = 0;
+    document.getElementById('lista-registros').innerHTML =
+      '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    document.getElementById('btn-mais').style.display = 'none';
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      carregando  = false;
+      totalGeral  = res.total;
+      offset      = res.offset + res.registros.length;
+
+      document.getElementById('contador').textContent =
+        'Mostrando ' + Math.min(offset, totalGeral) + ' de ' + totalGeral + ' registros';
+
+      if (reiniciar) {
+        if (res.registros.length === 0) {
+          document.getElementById('lista-registros').innerHTML =
+            '<div class="vazio">Nenhum registro encontrado.</div>';
+        } else {
+          document.getElementById('lista-registros').innerHTML = renderCards(res.registros);
+        }
+      } else {
+        document.getElementById('lista-registros').innerHTML += renderCards(res.registros);
+      }
+
+      var btnMais = document.getElementById('btn-mais');
+      if (res.temMais) {
+        btnMais.style.display = 'block';
+        btnMais.disabled      = false;
+        btnMais.textContent   = '↓ Carregar mais (' + (totalGeral - offset) + ' restantes)';
+      } else {
+        btnMais.style.display = 'none';
+      }
+    })
+    .withFailureHandler(function(err) {
+      carregando = false;
+      document.getElementById('lista-registros').innerHTML =
+        '<div class="vazio">❌ Erro: ' + err.message + '</div>';
+    })
+    .getRegistros(filtrosAtivos, reiniciar ? 0 : offset, limite);
+}
+
+function carregarMais() {
+  document.getElementById('btn-mais').disabled    = true;
+  document.getElementById('btn-mais').textContent = '↓ Carregando...';
+  carregarRegistros(false);
+}
+
+// ── RENDER DOS CARDS ───────────────────────────────────────
+function renderCards(registros) {
+  var html = '';
+  registros.forEach(function(r) {
+    var isDesp   = r.tipo === 'DESPESAS';
+    var valClass = isDesp ? 'val-desp' : 'val-rec';
+    var sinal    = isDesp ? '- ' : '+ ';
+    var tipoClass = isDesp ? 'tag-tipo-desp' : 'tag-tipo-rec';
+
+    // Datas
+    var datas = '';
+    if (r.pgto) {
+      datas += '<div class="data-item"><span class="data-label">Pgto</span>' +
+        '<span class="data-val">' + r.pgto + '</span></div>';
+    }
+    if (r.trans) {
+      datas += '<div class="data-item"><span class="data-label">Compra</span>' +
+        '<span class="data-val">' + r.trans + '</span></div>';
+    }
+
+    // Parcela
+    var parcInfo = r.parc ? 'Parc. ' + r.parc : '';
+
+    html += '<div class="card-reg">' +
+
+      // Topo: ID + Item + Valor
+      '<div class="card-reg-topo">' +
+        '<div>' +
+          '<div class="card-id">#' + r.id + '</div>' +
+          '<div class="card-item">' + escapeHtml(r.item) + '</div>' +
+        '</div>' +
+        '<div class="card-valor ' + valClass + '">' + sinal + formatBRL(r.vabs) + '</div>' +
+      '</div>' +
+
+      // Datas
+      (datas ? '<div class="card-datas">' + datas + '</div>' : '') +
+
+      // Tags
+      '<div class="card-tags">' +
+        '<span class="tag ' + tipoClass + '">' + escapeHtml(r.tipo) + '</span>' +
+        (r.setor  ? '<span class="tag">' + escapeHtml(r.setor) + '</span>' : '') +
+        (r.cat    ? '<span class="tag tag-cat">' + escapeHtml(r.cat) + '</span>' : '') +
+        (r.fonte  ? '<span class="tag tag-fonte">' + escapeHtml(r.fonte) + '</span>' : '') +
+        (r.modo   ? '<span class="tag">' + escapeHtml(r.modo) + '</span>' : '') +
+      '</div>' +
+
+      // Rodapé: local + parcela
+      ((r.local || parcInfo) ?
+        '<div class="card-bottom">' +
+          '<span class="card-local">' + escapeHtml(r.local || '') + '</span>' +
+          (parcInfo ? '<span class="card-parc">📦 ' + parcInfo + '</span>' : '') +
+        '</div>' : '') +
+
+    '</div>';
+  });
+  return html;
+}
+
+// ── UTILITÁRIOS ────────────────────────────────────────────
+function formatBRL(v) {
+  return 'R$ ' + Math.abs(v).toFixed(2)
+    .replace('.', ',')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+
+// ── NOVO REGISTRO ─────────────────────────────────────────
+
+var dadosForm   = null;
+var tipoAtual   = 'DESPESAS';
+var proximoId   = 0;
+
+// ── INIT ──────────────────────────────────────────────────
+function initNovoRegistro() {
+  google.script.run
+    .withSuccessHandler(function(d) {
+      dadosForm  = d;
+      proximoId  = d.proximoId;
+      document.getElementById('display-id').textContent = '#' + proximoId;
+      document.getElementById('pgto').value = d.proximoPgto;
+
+      // Categorias
+      var catSel = document.getElementById('cat');
+      d.categorias.forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        catSel.appendChild(opt);
+      });
+
+      // Fontes
+      var fonteSel = document.getElementById('fonte');
+      d.fontes.forEach(function(f) {
+        var opt = document.createElement('option');
+        opt.value = f; opt.textContent = f;
+        if (f === 'NUBANK') opt.selected = true;
+        fonteSel.appendChild(opt);
+      });
+    })
+    .withFailureHandler(function(e) { showToastForm('Erro ao carregar: ' + e.message, true); })
+    .getDadosFormulario();
+};
+
+// ── TIPO ──────────────────────────────────────────────────
+function setTipo(tipo) {
+  tipoAtual = tipo;
+  var btnDesp = document.getElementById('btn-desp');
+  var btnRec  = document.getElementById('btn-rec');
+  var modoSel = document.getElementById('modo');
+
+  if (tipo === 'DESPESAS') {
+    btnDesp.className = 'btn-tipo ativo-desp';
+    btnRec.className  = 'btn-tipo';
+    // Sugere DEB como padrão para despesa
+    if (modoSel.value === 'REC') modoSel.value = 'DEB';
+  } else {
+    btnRec.className  = 'btn-tipo ativo-rec';
+    btnDesp.className = 'btn-tipo';
+    // Sugere REC como padrão para receita
+    modoSel.value = 'REC';
+  }
+}
+
+// ── PARCELADO ─────────────────────────────────────────────
+function toggleParcelado() {
+  var chk   = document.getElementById('chk-parcelado');
+  var extra = document.getElementById('parcelas-extra');
+  // O click no label já alterna o checkbox
+  setTimeout(function() {
+    if (chk.checked) {
+      extra.classList.add('visivel');
+      document.getElementById('num-parcelas').focus();
+    } else {
+      extra.classList.remove('visivel');
+      document.getElementById('num-parcelas').value = '';
+    }
+  }, 10);
+}
+
+// ── NOVA CATEGORIA ────────────────────────────────────────
+function toggleNovaCat() {
+  var box = document.getElementById('nova-cat-box');
+  box.classList.toggle('visivel');
+  if (box.classList.contains('visivel')) {
+    document.getElementById('nova-cat-input').focus();
+  }
+}
+
+function confirmarNovaCat() {
+  var nome = document.getElementById('nova-cat-input').value.trim().toUpperCase();
+  if (!nome) { showToastForm('Digite o nome da categoria', true); return; }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.erro) { showToastForm(res.erro, true); return; }
+      var catSel = document.getElementById('cat');
+      var opt = document.createElement('option');
+      opt.value = res.categoria; opt.textContent = res.categoria;
+      catSel.appendChild(opt);
+      catSel.value = res.categoria;
+      document.getElementById('nova-cat-input').value = '';
+      document.getElementById('nova-cat-box').classList.remove('visivel');
+      showToastForm('Categoria "' + res.categoria + '" adicionada!');
+    })
+    .withFailureHandler(function(e) { showToastForm('Erro: ' + e.message, true); })
+    .adicionarCategoria(nome);
+}
+
+// ── VALIDAÇÃO ─────────────────────────────────────────────
+function validar() {
+  var campos = [
+    { id: 'item',  label: 'Descrição' },
+    { id: 'vabs',  label: 'Valor' },
+    { id: 'pgto',  label: 'Data PGTO' },
+    { id: 'cat',   label: 'Categoria' },
+    { id: 'fonte', label: 'Fonte' }
+  ];
+  for (var i = 0; i < campos.length; i++) {
+    var val = document.getElementById(campos[i].id).value;
+    if (!val || val.trim() === '') {
+      showToastForm('Campo obrigatório: ' + campos[i].label, true);
+      document.getElementById(campos[i].id).focus();
+      return false;
+    }
+  }
+  var chk = document.getElementById('chk-parcelado');
+  if (chk.checked) {
+    var np = parseInt(document.getElementById('num-parcelas').value);
+    if (!np || np < 2) {
+      showToastForm('Informe a quantidade de parcelas (mínimo 2)', true);
+      document.getElementById('num-parcelas').focus();
+      return false;
+    }
+  }
+  return true;
+}
+
+// ── SALVAR ────────────────────────────────────────────────
+function confirmarSalvar() {
+  if (!validar()) return;
+
+  var chk      = document.getElementById('chk-parcelado');
+  var parcelas = chk.checked ? parseInt(document.getElementById('num-parcelas').value) : 1;
+
+  var dados = {
+    id:      proximoId,
+    tipo:    tipoAtual,
+    item:    document.getElementById('item').value.trim().toUpperCase(),
+    vabs:    parseFloat(document.getElementById('vabs').value),
+    pgto:    document.getElementById('pgto').value,
+    trans:   document.getElementById('trans').value || '',
+    setor:   document.getElementById('setor').value,
+    cat:     document.getElementById('cat').value,
+    fonte:   document.getElementById('fonte').value,
+    modo:    document.getElementById('modo').value,
+    local:   document.getElementById('local').value.trim().toUpperCase(),
+    parcelas: parcelas
+  };
+
+  setLoadingForm(true);
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      setLoadingForm(false);
+      if (res.erro) { showToastForm(res.erro, true); return; }
+
+      var msg = res.parcelas > 1
+        ? '✅ ' + res.parcelas + ' parcelas salvas! IDs ' + res.id + ' a ' + (res.id - res.parcelas + 1)
+        : '✅ Registro #' + res.id + ' salvo!';
+      showToastForm(msg);
+      limparForm(res.id - res.parcelas);
+    })
+    .withFailureHandler(function(e) {
+      setLoadingForm(false);
+      showToastForm('Erro ao salvar: ' + e.message, true);
+    })
+    .salvarRegistro(dados);
+}
+
+function limparForm(ultimoId) {
+  proximoId = ultimoId + 1; // próximo após o último salvo
+  // Precisa buscar o novo próximo ID do servidor
+  google.script.run
+    .withSuccessHandler(function(d) {
+      proximoId = d.proximoId;
+      document.getElementById('display-id').textContent = '#' + proximoId;
+      document.getElementById('pgto').value = d.proximoPgto;
+    })
+    .getDadosFormulario();
+
+  document.getElementById('item').value  = '';
+  document.getElementById('vabs').value  = '';
+  document.getElementById('trans').value = '';
+  document.getElementById('local').value = '';
+  document.getElementById('chk-parcelado').checked = false;
+  document.getElementById('parcelas-extra').classList.remove('visivel');
+  document.getElementById('num-parcelas').value = '';
+  setTipo('DESPESAS');
+}
+
+// ── UTILITÁRIOS ───────────────────────────────────────────
+function setLoadingForm(v) {
+  document.getElementById('loading').classList.toggle('visivel', v);
+  document.getElementById('btn-salvar').disabled = v;
+}
+
+function showToastForm(msg, erro) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (erro ? ' erro' : '') + ' visivel';
+  setTimeout(function() { t.classList.remove('visivel'); }, 3000);
+}
+
+</script>
+</body>
+</html>
