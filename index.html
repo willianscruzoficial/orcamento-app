@@ -1104,69 +1104,86 @@ if (isIos && !isStandalone) {
 
 <script>
 
-// ── CAMADA DE COMPATIBILIDADE google.script.run → fetch GET ──
-var _successHandler = null;
-var _failureHandler = null;
+// ── CAMADA DE COMPATIBILIDADE google.script.run → JSONP ──────
+var BACKEND = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec';
 
+function gsr(funcName) {
+  var _sh = null;
+  var _fh = null;
+  var api = {
+    withSuccessHandler: function(fn) { _sh = fn; return api; },
+    withFailureHandler: function(fn) { _fh = fn; return api; }
+  };
+  // Cada método do gsr retorna o api + uma função callable
+  var handler = function() {
+    var args = Array.prototype.slice.call(arguments);
+    jsonpCall(funcName, args, _sh, _fh);
+  };
+  handler.withSuccessHandler = api.withSuccessHandler;
+  handler.withFailureHandler = api.withFailureHandler;
+  return handler;
+}
+
+// Proxy simples para google.script.run.funcName(args)
 var google = {
   script: {
     run: new Proxy({}, {
       get: function(target, funcName) {
         var _sh = null;
         var _fh = null;
-        var obj = {
-          withSuccessHandler: function(fn) { _sh = fn; return obj; },
-          withFailureHandler: function(fn) { _fh = fn; return obj; }
-        };
-        // Proxy para capturar a chamada como função
-        return new Proxy(obj, {
-          apply: function(t, thisArg, args) {
-            callBackend(funcName, args, _sh, _fh);
+        var proxy = new Proxy(function() {}, {
+          apply: function(target, thisArg, args) {
+            jsonpCall(funcName, args, _sh, _fh);
           },
-          get: function(t, prop) {
-            if (prop === 'withSuccessHandler' || prop === 'withFailureHandler') {
-              return obj[prop];
+          get: function(target, prop) {
+            if (prop === 'withSuccessHandler') {
+              return function(fn) { _sh = fn; return proxy; };
             }
-            // É a chamada final da função
-            return function() {
-              var callArgs = Array.prototype.slice.call(arguments);
-              callBackend(funcName, callArgs, _sh, _fh);
-            };
+            if (prop === 'withFailureHandler') {
+              return function(fn) { _fh = fn; return proxy; };
+            }
+            return target[prop];
           }
         });
+        return proxy;
       }
     })
   }
 };
 
-function callBackend(funcName, args, successHandler, failureHandler) {
-  var cbName = 'cb_' + funcName.replace(/[^a-zA-Z0-9]/g,'') + '_' + Date.now();
+function jsonpCall(funcName, args, successHandler, failureHandler) {
+  var cbName = '_cb' + Math.random().toString(36).substr(2, 9);
 
   window[cbName] = function(data) {
-    try { document.body.removeChild(script); } catch(e) {}
+    var el = document.getElementById(cbName);
+    if (el) el.parentNode.removeChild(el);
     delete window[cbName];
     if (data && data.error) {
+      console.error('Backend error:', data.error);
       if (failureHandler) failureHandler({ message: data.error });
     } else {
-      if (successHandler) successHandler(data && data.result !== undefined ? data.result : data);
+      var result = (data && data.result !== undefined) ? data.result : data;
+      if (successHandler) successHandler(result);
     }
   };
 
-  // Codifica args manualmente para evitar problema com JSON na URL
-  var argsStr = encodeURIComponent(JSON.stringify(args));
-  var url = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec?callback=' + cbName +
-            '&func=' + encodeURIComponent(funcName) +
-            '&args=' + argsStr;
+  var url = BACKEND +
+    '?callback=' + cbName +
+    '&func=' + encodeURIComponent(funcName) +
+    '&args=' + encodeURIComponent(JSON.stringify(args));
 
   var script = document.createElement('script');
+  script.id  = cbName;
   script.src = url;
   script.onerror = function() {
-    try { document.body.removeChild(script); } catch(e) {}
+    var el = document.getElementById(cbName);
+    if (el) el.parentNode.removeChild(el);
     delete window[cbName];
-    if (failureHandler) failureHandler({ message: 'Erro de conexão' });
+    if (failureHandler) failureHandler({ message: 'Erro de conexão com servidor' });
   };
-  document.body.appendChild(script);
+  document.head.appendChild(script);
 }
+
 
 // ── NAVEGAÇÃO ──────────────────────────────────────────────
 var telaAtual = 'dashboard';
