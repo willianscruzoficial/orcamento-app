@@ -1140,17 +1140,11 @@ var google = {
 };
 
 function callBackend(funcName, args, successHandler, failureHandler) {
-  var params = new URLSearchParams();
-  params.append('func', funcName);
-  params.append('args', JSON.stringify(args));
-
-  var url = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec?callback=handleResponse_' + funcName + '_' + Date.now() + '&' + params.toString();
-
-  // Usa JSONP para evitar CORS
   var cbName = 'cb_' + funcName.replace(/[^a-zA-Z0-9]/g,'') + '_' + Date.now();
+
   window[cbName] = function(data) {
+    try { document.body.removeChild(script); } catch(e) {}
     delete window[cbName];
-    document.body.removeChild(script);
     if (data && data.error) {
       if (failureHandler) failureHandler({ message: data.error });
     } else {
@@ -1158,12 +1152,18 @@ function callBackend(funcName, args, successHandler, failureHandler) {
     }
   };
 
+  // Codifica args manualmente para evitar problema com JSON na URL
+  var argsStr = encodeURIComponent(JSON.stringify(args));
+  var url = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec?callback=' + cbName +
+            '&func=' + encodeURIComponent(funcName) +
+            '&args=' + argsStr;
+
   var script = document.createElement('script');
-  script.src = 'https://script.google.com/macros/s/AKfycbyTsYb2jAJIQUFncHv-SAGOzrHvdEebtIYHnc6J4aM_RZeNF7gXJKteGbpaKVuIyTE3og/exec?callback=' + cbName + '&func=' + encodeURIComponent(funcName) + '&args=' + encodeURIComponent(JSON.stringify(args));
+  script.src = url;
   script.onerror = function() {
+    try { document.body.removeChild(script); } catch(e) {}
     delete window[cbName];
-    document.body.removeChild(script);
-    if (failureHandler) failureHandler({ message: 'Erro de conexão com o servidor' });
+    if (failureHandler) failureHandler({ message: 'Erro de conexão' });
   };
   document.body.appendChild(script);
 }
